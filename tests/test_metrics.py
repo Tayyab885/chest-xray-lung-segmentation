@@ -95,8 +95,9 @@ def test_hd95_reflects_the_spike_not_the_near_zero_reverse_distance():
     gt = square()
     pred = gt.copy()
     pred[19, 30:50] = True  # spike tip sits 20 px past the square's right edge
-    # A one-directional Hausdorff (pred -> gt only) would read near 0 here,
-    # since almost all of gt's boundary sits exactly on pred's boundary too.
-    # The correct hd95 must also account for the pred -> gt direction and
-    # land close to the spike length instead.
+    # The gt -> pred direction reads near 0 here, since almost all of gt's
+    # boundary sits exactly on pred's boundary too. Only the pred -> gt
+    # direction sees the spike, so hd95 must take the max of both to land
+    # near the spike length. The companion symmetry test is what actually
+    # catches an implementation that keeps only one direction.
     assert hd95(pred, gt) > 10.0
