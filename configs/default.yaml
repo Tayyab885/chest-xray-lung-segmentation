@@ -1,0 +1,13 @@
+data_root: data
+results_dir: results
+checkpoint_dir: checkpoints
+image_size: 512
+batch_size: 8
+epochs: 60
+lr: 0.0003
+weight_decay: 0.0001
+patience: 10
+num_workers: 2
+seed: 42
+val_frac: 0.15
+test_frac: 0.15

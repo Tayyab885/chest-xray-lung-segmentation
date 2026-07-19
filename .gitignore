@@ -1,0 +1,28 @@
+# Data (downloaded separately, too large for git)
+data/
+*.tar.gz
+*.zip
+
+# Images and tables, except generated results
+*.png
+*.jpg
+*.csv
+!results/**/*.png
+!results/**/*.csv
+
+# Model checkpoints
+*.pt
+*.pth
+checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
