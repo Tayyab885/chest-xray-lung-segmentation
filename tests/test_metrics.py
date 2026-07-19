@@ -36,10 +36,10 @@ def test_dice_of_half_overlapping_squares_is_exactly_one_half():
     assert iou(a, b) == pytest.approx(1.0 / 3.0)
 
 
-def test_hd95_of_shifted_square_is_about_the_shift():
+def test_hd95_of_shifted_square_is_exactly_the_shift():
     a = square(left=10, side=20)
     b = square(left=15, side=20)  # shifted 5 px in x
-    assert hd95(a, b) == pytest.approx(5.0, abs=1.0)
+    assert hd95(a, b) == pytest.approx(5.0)
 
 
 def test_assd_is_smaller_than_hd95_for_a_shift():
@@ -66,3 +66,37 @@ def test_all_metrics_returns_every_key():
 def test_shape_mismatch_raises():
     with pytest.raises(ValueError):
         dice(np.zeros((4, 4), dtype=bool), np.zeros((5, 5), dtype=bool))
+
+
+def test_non_boolean_float_input_raises():
+    with pytest.raises(ValueError):
+        dice(np.zeros((4, 4), dtype=float), np.zeros((4, 4), dtype=bool))
+
+
+def test_uint8_input_raises():
+    with pytest.raises(ValueError):
+        dice(np.zeros((4, 4), dtype=np.uint8), np.zeros((4, 4), dtype=np.uint8))
+
+
+def test_3d_input_raises():
+    with pytest.raises(ValueError):
+        dice(np.zeros((1, 4, 4), dtype=bool), np.zeros((1, 4, 4), dtype=bool))
+
+
+def test_hd95_and_assd_are_symmetric_for_an_asymmetric_pair():
+    a = square()  # plain 20x20 square
+    b = a.copy()
+    b[19, 30:50] = True  # same square plus a thin 20 px spike off its right edge
+    assert hd95(a, b) == pytest.approx(hd95(b, a))
+    assert assd(a, b) == pytest.approx(assd(b, a))
+
+
+def test_hd95_reflects_the_spike_not_the_near_zero_reverse_distance():
+    gt = square()
+    pred = gt.copy()
+    pred[19, 30:50] = True  # spike tip sits 20 px past the square's right edge
+    # A one-directional Hausdorff (pred -> gt only) would read near 0 here,
+    # since almost all of gt's boundary sits exactly on pred's boundary too.
+    # The correct hd95 must also account for the pred -> gt direction and
+    # land close to the spike length instead.
+    assert hd95(pred, gt) > 10.0

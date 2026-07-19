@@ -3,17 +3,22 @@
 Overlap metrics (dice, iou) are defined for empty masks: two empty masks agree
 perfectly, one empty and one not agree not at all. Distance metrics are
 undefined when a surface does not exist, so they return NaN rather than a
-number that would silently pollute an average.
+number that would silently pollute an average. HD95 and ASSD are reported in
+pixels at the resolution of the input masks, so results computed on resized
+images are not in physical units.
 """
 import numpy as np
 from scipy.ndimage import binary_erosion, distance_transform_edt
 
 
 def _check(pred, gt):
-    pred = np.asarray(pred).astype(bool)
-    gt = np.asarray(gt).astype(bool)
+    pred, gt = np.asarray(pred), np.asarray(gt)
     if pred.shape != gt.shape:
         raise ValueError(f"shape mismatch: {pred.shape} vs {gt.shape}")
+    if pred.ndim != 2:
+        raise ValueError(f"expected 2D masks, got {pred.ndim}D")
+    if pred.dtype != np.bool_ or gt.dtype != np.bool_:
+        raise ValueError("masks must be boolean, threshold predictions first")
     return pred, gt
 
 
@@ -35,6 +40,10 @@ def iou(pred, gt):
 
 def _boundary(mask):
     """One-pixel inner boundary of a binary mask."""
+    # border_value=0 treats everything outside the array as background, so a
+    # mask that touches the array edge gets a boundary segment along that
+    # edge. This matches the medpy convention, but it biases ASSD/HD95
+    # optimistically when both masks are cut off by the same field of view.
     eroded = binary_erosion(mask, border_value=0)
     return np.logical_xor(mask, eroded)
 
