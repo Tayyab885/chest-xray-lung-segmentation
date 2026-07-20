@@ -1,0 +1,28 @@
+# Paths are relative to data_root. Filled in from the observed directory tree
+# (kaggle datasets files <slug>), since these are community re-uploads whose
+# structure is not guaranteed to match any paper's original layout.
+# Kaggle mirror slugs recorded for reproducibility; cite the original papers,
+# not these re-uploads.
+montgomery:
+  kaggle_slug: nikhilpandey360/chest-xray-masks-and-labels
+  image_glob: "Lung Segmentation/CXR_png/MCUCXR_*.png"
+  mask_globs:
+    - "Lung Segmentation/ManualMask/leftMask/{stem}.png"
+    - "Lung Segmentation/ManualMask/rightMask/{stem}.png"
+  expected_count: 138
+
+shenzhen:
+  kaggle_slug: nikhilpandey360/chest-xray-masks-and-labels
+  image_glob: "Lung Segmentation/CXR_png/CHNCXR_*.png"
+  mask_globs:
+    - "Lung Segmentation/masks/{stem}_mask.png"
+  expected_count: 566
+
+jsrt:
+  kaggle_slug: abduzzami/jsrt-247-image-lung-segmentation-mask-dataset
+  # Downloaded into data/jsrt (see Step 1), and the zip itself nests everything
+  # under content/jsrt/, not jsrt/images as originally assumed.
+  image_glob: "jsrt/content/jsrt/cxr/*.png"
+  mask_globs:
+    - "jsrt/content/jsrt/masks/{stem}.png"
+  expected_count: 247
