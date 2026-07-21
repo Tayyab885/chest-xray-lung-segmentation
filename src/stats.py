@@ -31,7 +31,7 @@ def _require_unique_patients(frame, where):
         )
 
 
-def _single(frame, column, where):
+def single_value(frame, column, where):
     values = frame[column].unique()
     if len(values) > 1:
         raise ValueError(f"{where} mixes {column} values: {sorted(values)}")
@@ -51,7 +51,7 @@ def _one_model(series):
 def summarize(per_image):
     """Group-level means, with the denominators the means were taken over."""
     for column in CONDITION_KEYS:
-        _single(per_image, column, "summary")
+        single_value(per_image, column, "summary")
 
     for keys, group in per_image.groupby(GROUP_KEYS, dropna=False):
         _require_unique_patients(group, f"group {dict(zip(GROUP_KEYS, keys))}")
@@ -171,13 +171,13 @@ def paired_compare(df_a, df_b, metric="dice", alpha=0.05):
     # split at the same resolution, so forgetting one filter on one side
     # compares a run against itself and returns a significant improvement.
     for column in CONDITION_KEYS + ["split", "postprocessed", "held_out"]:
-        left = _single(df_a, column, "df_a")
-        right = _single(df_b, column, "df_b")
+        left = single_value(df_a, column, "df_a")
+        right = single_value(df_b, column, "df_b")
         if left != right:
             raise ValueError(
                 f"paired comparison across different {column}: {left!r} vs {right!r}"
             )
-    if _single(df_a, "arm", "df_a") == _single(df_b, "arm", "df_b"):
+    if single_value(df_a, "arm", "df_a") == single_value(df_b, "arm", "df_b"):
         raise ValueError("paired comparison of an arm against itself")
 
     # Sorting by patient_id, not zipping by position: the two frames can hold

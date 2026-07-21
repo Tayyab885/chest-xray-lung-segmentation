@@ -54,20 +54,22 @@ def _predict_frame(model, frame, cfg, device):
     return preds, gts
 
 
-def evaluate_run(cfg, checkpoint_path, fold, arm):
-    """Score one checkpoint on the in-domain and off-domain test sets."""
-    if arm not in ARMS:
-        raise ValueError(f"unknown arm: {arm!r}, expected one of {sorted(ARMS)}")
-    model_name, _ = ARMS[arm]
+PROVENANCE_KEYS = ("arm", "held_out", "seed", "image_size")
 
-    device = cfg.get("device") or assert_gpu_usable()
+
+def load_checkpoint(checkpoint_path, device, arm, held_out, cfg):
+    """Load a checkpoint and refuse it unless its provenance matches this run.
+
+    Shared with the figure code so a panel cannot be drawn from a checkpoint
+    the evaluator would have rejected.
+    """
     # weights_only=True: torch.load unpickles arbitrary objects by default,
     # which is arbitrary code execution on an untrusted checkpoint. The
     # checkpoint here holds only tensors, strings, and numbers.
     state = torch.load(checkpoint_path, map_location=device, weights_only=True)
 
     name = Path(checkpoint_path).name
-    missing = [k for k in ("arm", "held_out", "seed", "image_size") if k not in state]
+    missing = [k for k in PROVENANCE_KEYS if k not in state]
     if missing:
         # A missing key must not be read as agreement. Defaulting to the
         # caller's value would turn each guard below into a no-op for exactly
@@ -79,13 +81,24 @@ def evaluate_run(cfg, checkpoint_path, fold, arm):
     # against the Montgomery fold means the "off-domain" images were in its
     # training set, so the headline in-domain-minus-off-domain gap collapses
     # toward zero and the paper's conclusion inverts.
-    for key, want in [("arm", arm), ("held_out", fold.held_out),
+    for key, want in [("arm", arm), ("held_out", held_out),
                       ("seed", cfg.get("seed")), ("image_size", cfg["image_size"])]:
         if want is not None and state[key] != want:
             raise ValueError(
                 f"checkpoint {name} has {key}={state[key]!r}, "
                 f"but this evaluation is configured for {key}={want!r}"
             )
+    return state
+
+
+def evaluate_run(cfg, checkpoint_path, fold, arm):
+    """Score one checkpoint on the in-domain and off-domain test sets."""
+    if arm not in ARMS:
+        raise ValueError(f"unknown arm: {arm!r}, expected one of {sorted(ARMS)}")
+    model_name, _ = ARMS[arm]
+
+    device = cfg.get("device") or assert_gpu_usable()
+    state = load_checkpoint(checkpoint_path, device, arm, fold.held_out, cfg)
 
     # pretrained=False regardless: the trained weights replace the encoder
     # anyway, so downloading ImageNet here would be wasted work.
