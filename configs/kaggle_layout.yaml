@@ -13,9 +13,10 @@ montgomery:
   image_glob: "nikhilpandey360/chest-xray-masks-and-labels/data/Lung Segmentation/CXR_png/MCUCXR_*.png"
   # This mirror has no ManualMask/leftMask and rightMask directories. Both
   # sources' masks live in one flat masks/ directory, already merged into a
-  # single file per radiograph.
+  # single file per radiograph. The two sources are named differently in there:
+  # Montgomery keeps the image's own filename, Shenzhen adds a _mask suffix.
   mask_globs:
-    - "nikhilpandey360/chest-xray-masks-and-labels/data/Lung Segmentation/masks/{stem}_mask.png"
+    - "nikhilpandey360/chest-xray-masks-and-labels/data/Lung Segmentation/masks/{stem}.png"
   expected_count: 138
 
 shenzhen:

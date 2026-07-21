@@ -13,9 +13,11 @@ montgomery:
   kaggle_slug: nikhilpandey360/chest-xray-masks-and-labels
   image_glob: "chest-xray-masks-and-labels/data/Lung Segmentation/CXR_png/MCUCXR_*.png"
   # Not ManualMask/leftMask and rightMask: this mirror ships one merged mask
-  # per radiograph in a flat masks/ directory shared with Shenzhen.
+  # per radiograph in a flat masks/ directory shared with Shenzhen. The two
+  # sources are named differently in there: Montgomery keeps the image's own
+  # filename, Shenzhen adds a _mask suffix.
   mask_globs:
-    - "chest-xray-masks-and-labels/data/Lung Segmentation/masks/{stem}_mask.png"
+    - "chest-xray-masks-and-labels/data/Lung Segmentation/masks/{stem}.png"
   expected_count: 138
 
 shenzhen:
