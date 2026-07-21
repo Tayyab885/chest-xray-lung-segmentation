@@ -118,6 +118,13 @@ def evaluate_run(cfg, checkpoint_path, fold, arm):
                     "split": split_name,
                     "postprocessed": flag,
                     "image_size": cfg["image_size"],
+                    # From the checkpoint, not the config, so the column
+                    # records the seed that actually trained these weights.
+                    # Without it the seed lives only in the filename, and
+                    # concatenating two arms trained under different seeds
+                    # confounds initialisation with seed, which is the one
+                    # confound the three-arm design exists to remove.
+                    "seed": state["seed"],
                     # HD95 and ASSD are NaN exactly when the prediction is
                     # empty, which is the total-failure case and is commonest
                     # off-domain. A plain .mean() downstream skips those rows,

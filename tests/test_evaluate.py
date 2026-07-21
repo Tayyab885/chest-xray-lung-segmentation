@@ -434,6 +434,20 @@ def test_rows_record_the_evaluation_resolution(tmp_path, cfg, fake_frame):
     assert (df["image_size"] == 32).all()
 
 
+def test_rows_record_the_seed_that_trained_the_weights(tmp_path, cfg, fake_frame):
+    """Without the column the seed exists only in the filename.
+
+    Concatenating two arms trained under different seeds then confounds
+    initialisation with seed, which is the one confound the three-arm design
+    exists to remove, and no grouping key or duplicate check can see it.
+    """
+    frame = fake_frame(2, "a")
+    fold = Fold(held_out="c", train=frame, val=frame, id_test=frame,
+                ood_test=fake_frame(1, "c"))
+    df = evaluate_run(cfg, _checkpoint(tmp_path), fold, "unet")
+    assert (df["seed"] == cfg["seed"]).all()
+
+
 def test_a_short_prediction_list_is_an_error_not_a_short_csv(tmp_path, cfg,
                                                             fake_frame, monkeypatch):
     # Silently zipping to the shorter list gives correct scores over a wrong
