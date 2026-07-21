@@ -1,27 +1,37 @@
-# Paths are relative to data_root. Filled in from the observed directory tree
+# Paths are relative to data_root. Taken from the observed directory tree
 # (kaggle datasets files <slug>), since these are community re-uploads whose
 # structure is not guaranteed to match any paper's original layout.
 # Kaggle mirror slugs recorded for reproducibility; cite the original papers,
 # not these re-uploads.
+#
+# Montgomery and Shenzhen were confirmed against the mounted Kaggle tree rather
+# than a local copy: the 9.6GB download stalled on the workstation and was
+# never completed. configs/kaggle_layout.yaml is the same layout with the mount
+# prefix, and tests/test_config.py pins the two files to the same sources and
+# counts.
 montgomery:
   kaggle_slug: nikhilpandey360/chest-xray-masks-and-labels
-  image_glob: "Lung Segmentation/CXR_png/MCUCXR_*.png"
+  image_glob: "chest-xray-masks-and-labels/data/Lung Segmentation/CXR_png/MCUCXR_*.png"
+  # Not ManualMask/leftMask and rightMask: this mirror ships one merged mask
+  # per radiograph in a flat masks/ directory shared with Shenzhen.
   mask_globs:
-    - "Lung Segmentation/ManualMask/leftMask/{stem}.png"
-    - "Lung Segmentation/ManualMask/rightMask/{stem}.png"
+    - "chest-xray-masks-and-labels/data/Lung Segmentation/masks/{stem}_mask.png"
   expected_count: 138
 
 shenzhen:
   kaggle_slug: nikhilpandey360/chest-xray-masks-and-labels
-  image_glob: "Lung Segmentation/CXR_png/CHNCXR_*.png"
+  image_glob: "chest-xray-masks-and-labels/data/Lung Segmentation/CXR_png/CHNCXR_*.png"
   mask_globs:
-    - "Lung Segmentation/masks/{stem}_mask.png"
+    - "chest-xray-masks-and-labels/data/Lung Segmentation/masks/{stem}_mask.png"
+  # 662 radiographs, 566 masks. The 96 unannotated ones cannot be segmented or
+  # scored, so the study is the annotated subset and says so here.
   expected_count: 566
+  expected_unmasked: 96
 
 jsrt:
   kaggle_slug: abduzzami/jsrt-247-image-lung-segmentation-mask-dataset
-  # Downloaded into data/jsrt (see Step 1), and the zip itself nests everything
-  # under content/jsrt/, not jsrt/images as originally assumed.
+  # The zip nests everything under content/jsrt/, not jsrt/images as originally
+  # assumed, and the same nesting is present on the Kaggle mount.
   image_glob: "jsrt/content/jsrt/cxr/*.png"
   mask_globs:
     - "jsrt/content/jsrt/masks/{stem}.png"

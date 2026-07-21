@@ -130,3 +130,66 @@ def test_image_is_z_scored(fake_root):
     assert img.shape == (32, 32)
     assert img.dtype == np.float32
     assert np.isfinite(img).all()
+
+
+def _add_unmasked(root, layout, n=1):
+    """Add images with no mask, as the Shenzhen mirror has."""
+    for i in range(n):
+        Image.fromarray(np.full((32, 32), 70, dtype=np.uint8)).save(
+            root / "srcB" / "img" / f"B_9{i}.png")
+    layout["srcB"]["expected_count"] = 1
+
+
+def test_unmasked_images_still_raise_when_the_layout_does_not_declare_them(fake_root):
+    root, layout = fake_root
+    _add_unmasked(root, layout)
+    # Silence is the failure mode here. An undeclared image without a mask is a
+    # broken download, not a dataset property, and dropping it quietly would
+    # change the denominator of every metric.
+    with pytest.raises(FileNotFoundError):
+        build_manifest(root, layout)
+
+
+def test_a_declared_count_of_unmasked_images_is_dropped(fake_root):
+    root, layout = fake_root
+    _add_unmasked(root, layout, n=2)
+    layout["srcB"]["expected_unmasked"] = 2
+
+    manifest = build_manifest(root, layout)
+    # The Shenzhen mirror ships 662 radiographs and 566 masks. The 96 without
+    # one cannot be segmented or scored, so the study is the annotated subset,
+    # and saying so in the config is what separates it from a silent drop.
+    assert list(manifest[manifest["source"] == "srcB"]["patient_id"]) == ["srcB/B_1"]
+
+
+def test_the_declared_number_of_unmasked_images_is_itself_checked(fake_root):
+    root, layout = fake_root
+    _add_unmasked(root, layout, n=3)
+    layout["srcB"]["expected_unmasked"] = 2
+
+    # Pins the composition from both sides. Without this a mirror that lost
+    # another hundred masks would still build a manifest, just a smaller one,
+    # and nothing downstream would notice the study had changed.
+    with pytest.raises(ValueError, match="unmasked"):
+        build_manifest(root, layout)
+
+
+def test_expected_count_is_checked_after_the_drop(fake_root):
+    root, layout = fake_root
+    _add_unmasked(root, layout, n=2)
+    layout["srcB"]["expected_unmasked"] = 2
+    layout["srcB"]["expected_count"] = 3  # the pre-drop total, not the study size
+
+    # expected_count is the number of images that enter the study, so it has to
+    # be counted after the unannotated ones are removed.
+    with pytest.raises(ValueError, match="expects 3"):
+        build_manifest(root, layout)
+
+
+def test_dropped_images_are_reported(fake_root, capsys):
+    root, layout = fake_root
+    _add_unmasked(root, layout, n=2)
+    layout["srcB"]["expected_unmasked"] = 2
+    build_manifest(root, layout)
+
+    assert "2" in capsys.readouterr().out

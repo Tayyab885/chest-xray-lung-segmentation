@@ -44,6 +44,10 @@ def test_the_two_layouts_describe_the_same_datasets():
     assert set(local) == set(kaggle)
     for source in local:
         assert local[source]["expected_count"] == kaggle[source]["expected_count"]
+        # The unannotated Shenzhen radiographs are part of the study's
+        # composition, so the two files have to agree on them as well.
+        assert local[source].get("expected_unmasked") == \
+            kaggle[source].get("expected_unmasked")
         assert local[source]["kaggle_slug"] == kaggle[source]["kaggle_slug"]
         assert len(local[source]["mask_globs"]) == len(kaggle[source]["mask_globs"])
 

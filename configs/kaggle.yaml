@@ -1,7 +1,9 @@
 # Deltas from default.yaml for a Kaggle T4 session. Everything not listed here
 # falls back to src/config.py DEFAULTS, so the two configs cannot drift on the
 # hyperparameters that decide the result.
-data_root: /kaggle/input
+# A Kaggle dataset mounts at /kaggle/input/datasets/<owner>/<slug>, so the
+# globs in kaggle_layout.yaml start with the owner name.
+data_root: /kaggle/input/datasets
 results_dir: /kaggle/working/results
 checkpoint_dir: /kaggle/working/checkpoints
 

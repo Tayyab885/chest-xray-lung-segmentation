@@ -14,38 +14,62 @@ MANIFEST_COLUMNS = ["image_path", "mask_paths", "source", "patient_id"]
 
 
 def build_manifest(data_root, layout):
-    """Scan every configured source and return one row per image.
+    """Scan every configured source and return one row per annotated image.
 
-    Raises if a source yields a different image count than configured, or if
-    any image is missing one of its mask files. A silently dropped image would
-    change the denominator of every metric.
+    Raises if a source yields a different image count than configured, or if an
+    image is missing a mask the layout did not say to expect. A silently
+    dropped image would change the denominator of every metric.
+
+    A source may set `expected_unmasked` when the mirror ships radiographs
+    without segmentations, as the Shenzhen one does: 662 images against 566
+    masks. Those images cannot be segmented or scored, so the study is the
+    annotated subset. The count is declared rather than inferred so that the
+    composition is pinned from both sides, and `expected_count` is then checked
+    after the drop because it is the number that enters the study.
     """
     root = Path(data_root)
     rows = []
 
     for source, spec in layout.items():
         images = sorted(root.glob(spec["image_glob"]))
-        expected = spec.get("expected_count")
-        if expected is not None and len(images) != expected:
-            raise ValueError(
-                f"{source}: found {len(images)} images, config expects {expected}. "
-                "Check the download, then update expected_count if the config is wrong."
-            )
+        allowed_unmasked = spec.get("expected_unmasked")
+        kept, unmasked = [], []
 
         for img in images:
-            stem = img.stem
-            masks = []
-            for pattern in spec["mask_globs"]:
-                mask_path = root / pattern.format(stem=stem)
-                if not mask_path.exists():
-                    raise FileNotFoundError(f"{source}: no mask at {mask_path}")
-                masks.append(str(mask_path))
+            masks = [root / pattern.format(stem=img.stem)
+                     for pattern in spec["mask_globs"]]
+            missing = [m for m in masks if not m.exists()]
+            if missing:
+                if allowed_unmasked is None:
+                    raise FileNotFoundError(f"{source}: no mask at {missing[0]}")
+                unmasked.append(img)
+                continue
+            kept.append((img, masks))
 
+        if allowed_unmasked is not None and len(unmasked) != allowed_unmasked:
+            raise ValueError(
+                f"{source}: {len(unmasked)} images have no mask, config expects "
+                f"expected_unmasked={allowed_unmasked}. The mirror's composition "
+                "has changed, so the study is not the one this config describes."
+            )
+        if unmasked:
+            print(f"{source}: dropped {len(unmasked)} radiographs with no "
+                  f"segmentation, keeping {len(kept)}")
+
+        expected = spec.get("expected_count")
+        if expected is not None and len(kept) != expected:
+            raise ValueError(
+                f"{source}: found {len(kept)} annotated images, config expects "
+                f"{expected}. Check the download, then update expected_count if "
+                "the config is wrong."
+            )
+
+        for img, masks in kept:
             rows.append({
                 "image_path": str(img),
-                "mask_paths": masks,
+                "mask_paths": [str(m) for m in masks],
                 "source": source,
-                "patient_id": f"{source}/{stem}",
+                "patient_id": f"{source}/{img.stem}",
             })
 
     manifest = pd.DataFrame(rows, columns=MANIFEST_COLUMNS)

@@ -1,36 +1,40 @@
-# data_layout.yaml with the globs rewritten for Kaggle mount paths. A Kaggle
-# dataset mounts at /kaggle/input/<the part of the slug after the slash>, so
-# nikhilpandey360/chest-xray-masks-and-labels lands in
-# /kaggle/input/chest-xray-masks-and-labels.
+# data_layout.yaml with the globs rewritten for Kaggle mount paths, verified
+# against the mounted tree rather than guessed.
 #
-# The Montgomery and Shenzhen trees below are inferred from the dataset's file
-# listing, not from a local copy: the 9.6GB download stalled and was never
-# completed on this machine. They are unverified. Run the manifest cell in
-# notebooks/kaggle_run.ipynb before training, which is what proves them:
-# build_manifest counts every source against expected_count and raises on a
-# mismatch, so a wrong glob costs one cell rather than a training run.
+# A Kaggle dataset mounts at /kaggle/input/datasets/<owner>/<slug>, not at
+# /kaggle/input/<slug>, so data_root is /kaggle/input/datasets and every glob
+# starts with the owner.
 #
-# The JSRT globs differ from data_layout.yaml because the local paths carry the
-# content/jsrt/ nesting that the downloaded zip introduced. The Kaggle mount
-# has no such wrapper.
+# The chest-xray-masks-and-labels mirror contains its own tree twice, once at
+# "Lung Segmentation/" and once at "data/Lung Segmentation/". The globs anchor
+# to the second. An unanchored pattern would match both and double every count.
 montgomery:
   kaggle_slug: nikhilpandey360/chest-xray-masks-and-labels
-  image_glob: "chest-xray-masks-and-labels/Lung Segmentation/CXR_png/MCUCXR_*.png"
+  image_glob: "nikhilpandey360/chest-xray-masks-and-labels/data/Lung Segmentation/CXR_png/MCUCXR_*.png"
+  # This mirror has no ManualMask/leftMask and rightMask directories. Both
+  # sources' masks live in one flat masks/ directory, already merged into a
+  # single file per radiograph.
   mask_globs:
-    - "chest-xray-masks-and-labels/Lung Segmentation/ManualMask/leftMask/{stem}.png"
-    - "chest-xray-masks-and-labels/Lung Segmentation/ManualMask/rightMask/{stem}.png"
+    - "nikhilpandey360/chest-xray-masks-and-labels/data/Lung Segmentation/masks/{stem}_mask.png"
   expected_count: 138
 
 shenzhen:
   kaggle_slug: nikhilpandey360/chest-xray-masks-and-labels
-  image_glob: "chest-xray-masks-and-labels/Lung Segmentation/CXR_png/CHNCXR_*.png"
+  image_glob: "nikhilpandey360/chest-xray-masks-and-labels/data/Lung Segmentation/CXR_png/CHNCXR_*.png"
   mask_globs:
-    - "chest-xray-masks-and-labels/Lung Segmentation/masks/{stem}_mask.png"
+    - "nikhilpandey360/chest-xray-masks-and-labels/data/Lung Segmentation/masks/{stem}_mask.png"
+  # The mirror ships 662 Shenzhen radiographs and 566 masks. The 96 without a
+  # segmentation cannot be trained on or scored, so the study is the annotated
+  # subset. Declared rather than inferred: build_manifest checks both numbers,
+  # so a mirror that loses more masks fails instead of quietly shrinking.
   expected_count: 566
+  expected_unmasked: 96
 
 jsrt:
   kaggle_slug: abduzzami/jsrt-247-image-lung-segmentation-mask-dataset
-  image_glob: "jsrt-247-image-lung-segmentation-mask-dataset/cxr/*.png"
+  # The content/jsrt/ nesting is in the uploaded dataset itself, so it is
+  # present on the Kaggle mount as well as in the local download.
+  image_glob: "abduzzami/jsrt-247-image-lung-segmentation-mask-dataset/content/jsrt/cxr/*.png"
   mask_globs:
-    - "jsrt-247-image-lung-segmentation-mask-dataset/masks/{stem}.png"
+    - "abduzzami/jsrt-247-image-lung-segmentation-mask-dataset/content/jsrt/masks/{stem}.png"
   expected_count: 247
