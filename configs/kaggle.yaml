@@ -1,0 +1,11 @@
+# Deltas from default.yaml for a Kaggle T4 session. Everything not listed here
+# falls back to src/config.py DEFAULTS, so the two configs cannot drift on the
+# hyperparameters that decide the result.
+data_root: /kaggle/input
+results_dir: /kaggle/working/results
+checkpoint_dir: /kaggle/working/checkpoints
+
+# 16GB replaces 6GB, so the batch grows. Kaggle gives 4 CPUs and PNG decode at
+# 512x512 is what the GPU waits on, not the convolutions.
+batch_size: 16
+num_workers: 4

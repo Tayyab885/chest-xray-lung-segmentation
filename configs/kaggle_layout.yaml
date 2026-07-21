@@ -1,0 +1,36 @@
+# data_layout.yaml with the globs rewritten for Kaggle mount paths. A Kaggle
+# dataset mounts at /kaggle/input/<the part of the slug after the slash>, so
+# nikhilpandey360/chest-xray-masks-and-labels lands in
+# /kaggle/input/chest-xray-masks-and-labels.
+#
+# The Montgomery and Shenzhen trees below are inferred from the dataset's file
+# listing, not from a local copy: the 9.6GB download stalled and was never
+# completed on this machine. They are unverified. Run the manifest cell in
+# notebooks/kaggle_run.ipynb before training, which is what proves them:
+# build_manifest counts every source against expected_count and raises on a
+# mismatch, so a wrong glob costs one cell rather than a training run.
+#
+# The JSRT globs differ from data_layout.yaml because the local paths carry the
+# content/jsrt/ nesting that the downloaded zip introduced. The Kaggle mount
+# has no such wrapper.
+montgomery:
+  kaggle_slug: nikhilpandey360/chest-xray-masks-and-labels
+  image_glob: "chest-xray-masks-and-labels/Lung Segmentation/CXR_png/MCUCXR_*.png"
+  mask_globs:
+    - "chest-xray-masks-and-labels/Lung Segmentation/ManualMask/leftMask/{stem}.png"
+    - "chest-xray-masks-and-labels/Lung Segmentation/ManualMask/rightMask/{stem}.png"
+  expected_count: 138
+
+shenzhen:
+  kaggle_slug: nikhilpandey360/chest-xray-masks-and-labels
+  image_glob: "chest-xray-masks-and-labels/Lung Segmentation/CXR_png/CHNCXR_*.png"
+  mask_globs:
+    - "chest-xray-masks-and-labels/Lung Segmentation/masks/{stem}_mask.png"
+  expected_count: 566
+
+jsrt:
+  kaggle_slug: abduzzami/jsrt-247-image-lung-segmentation-mask-dataset
+  image_glob: "jsrt-247-image-lung-segmentation-mask-dataset/cxr/*.png"
+  mask_globs:
+    - "jsrt-247-image-lung-segmentation-mask-dataset/masks/{stem}.png"
+  expected_count: 247
