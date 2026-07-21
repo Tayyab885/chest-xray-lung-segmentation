@@ -101,3 +101,22 @@ def test_hd95_reflects_the_spike_not_the_near_zero_reverse_distance():
     # near the spike length. The companion symmetry test is what actually
     # catches an implementation that keeps only one direction.
     assert hd95(pred, gt) > 10.0
+
+
+def test_all_metrics_agrees_with_the_individual_functions():
+    # all_metrics shares one pair of distance transforms across hd95 and assd.
+    # This pins that the sharing is an optimisation and not a change in value.
+    rng = np.random.default_rng(0)
+    for _ in range(10):
+        pred = rng.random((32, 32)) > 0.5
+        gt = rng.random((32, 32)) > 0.5
+        combined = all_metrics(pred, gt)
+        assert combined["dice"] == dice(pred, gt)
+        assert combined["iou"] == iou(pred, gt)
+        assert combined["hd95"] == hd95(pred, gt)
+        assert combined["assd"] == assd(pred, gt)
+
+
+def test_all_metrics_still_rejects_non_bool_masks():
+    with pytest.raises(ValueError):
+        all_metrics(np.zeros((8, 8), dtype=np.uint8), np.zeros((8, 8), dtype=bool))

@@ -59,26 +59,40 @@ def _surface_distances(pred, gt):
     return dt_to_gt[pred_b], dt_to_pred[gt_b]
 
 
-def hd95(pred, gt):
-    pred, gt = _check(pred, gt)
-    d_pg, d_gp = _surface_distances(pred, gt)
+def _hd95_from(d_pg, d_gp):
     if d_pg is None:
         return float("nan")
     return float(max(np.percentile(d_pg, 95), np.percentile(d_gp, 95)))
 
 
-def assd(pred, gt):
-    pred, gt = _check(pred, gt)
-    d_pg, d_gp = _surface_distances(pred, gt)
+def _assd_from(d_pg, d_gp):
     if d_pg is None:
         return float("nan")
     return float((d_pg.sum() + d_gp.sum()) / (len(d_pg) + len(d_gp)))
 
 
+def hd95(pred, gt):
+    pred, gt = _check(pred, gt)
+    return _hd95_from(*_surface_distances(pred, gt))
+
+
+def assd(pred, gt):
+    pred, gt = _check(pred, gt)
+    return _assd_from(*_surface_distances(pred, gt))
+
+
 def all_metrics(pred, gt):
+    """All four metrics, sharing one pair of distance transforms.
+
+    Calling hd95 and assd separately runs the same two transforms twice, which
+    is the expensive half of the work at 512x512 and gets paid once per image
+    per run.
+    """
+    pred, gt = _check(pred, gt)
+    d_pg, d_gp = _surface_distances(pred, gt)
     return {
         "dice": dice(pred, gt),
         "iou": iou(pred, gt),
-        "hd95": hd95(pred, gt),
-        "assd": assd(pred, gt),
+        "hd95": _hd95_from(d_pg, d_gp),
+        "assd": _assd_from(d_pg, d_gp),
     }

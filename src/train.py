@@ -147,6 +147,12 @@ def train_one(cfg, fold, arm):
                 "model_name": model_name,
                 "pretrained": pretrained,
                 "held_out": fold.held_out,
+                # Provenance the evaluator checks before it will score this
+                # file. Without it a checkpoint can be scored under the wrong
+                # arm, fold, seed, or resolution and produce a real-looking
+                # number that is silently about something else.
+                "seed": cfg["seed"],
+                "image_size": cfg["image_size"],
                 "val_dice": best,
                 "epoch": epoch,
             }, ckpt_path)
