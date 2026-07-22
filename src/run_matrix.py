@@ -86,13 +86,18 @@ def restore_checkpoints(cfg, sources):
     restore_previous carries the scores. Same empty-/kaggle/working problem,
     same fix: attach the training session's output and copy its .pt files in
     before run_report renders anything.
+
+    `sources` is the same list passed to restore_previous, each entry the
+    results directory of an earlier session. The committed output writes
+    checkpoints beside results, not inside them, so the weights are the sibling
+    checkpoints/ of each results directory.
     """
     out_dir = Path(cfg["checkpoint_dir"])
     out_dir.mkdir(parents=True, exist_ok=True)
 
     restored = []
     for source in sources:
-        source_dir = Path(source) / "checkpoints"
+        source_dir = Path(source).parent / "checkpoints"
         for ckpt in sorted(source_dir.glob("*.pt")):
             target = out_dir / ckpt.name
             if target.exists():
