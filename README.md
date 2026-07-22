@@ -180,9 +180,34 @@ where the model already does well without it.
 
 ### Qualitative results
 
-Overlay panels of the best, median, and worst off-domain cases per fold are not
-in this commit yet. They will be added once regenerated from the saved
-checkpoints.
+Each panel shows the best, median, and worst off-domain case for one arm and
+fold, ranked by raw Dice, with the reference outline in green and the prediction
+in orange. The full set of nine is in `results/figures/`.
+
+On the two easy folds the model rarely fails outright. Even the worst Montgomery
+case stays at Dice 0.87 and is a single coherent contour; the disagreement is at
+the bottom of the left lung, where the Montgomery reference carries the field
+down behind the heart and the prediction stops higher. That is a difference in
+where the annotator drew the border, not a lung the model missed.
+
+![Held-out Montgomery, ResNet34 with ImageNet init](results/figures/overlay_unet_resnet34_imagenet_montgomery.png)
+
+The Shenzhen fold is where the worst cases actually break, and they break in two
+different ways. The first is diffuse disease. When bilateral opacity fills the
+lung the dark-field contrast the model leans on is gone, and instead of a clean
+border the prediction fragments and starts tracing the mottled texture inside
+and outside the field. This is the worst plain U-Net case, at Dice 0.497.
+
+![Held-out Shenzhen, plain U-Net](results/figures/overlay_unet_shenzhen.png)
+
+The second is an unusual projection. The worst pretrained case, at Dice 0.682,
+is a small AP film where both lungs are found but truncated, and the prediction
+also paints several blobs below the diaphragm, far from any lung. Those detached
+blobs are what the boundary-distance result is about: they cost little region
+overlap but move HD95 a great deal, and they are exactly what keeping the two
+largest connected components removes.
+
+![Held-out Shenzhen, ResNet34 with ImageNet init](results/figures/overlay_unet_resnet34_imagenet_shenzhen.png)
 
 ## Limitations
 
