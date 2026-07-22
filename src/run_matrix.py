@@ -78,6 +78,33 @@ def restore_previous(cfg, sources):
     return restored
 
 
+def restore_checkpoints(cfg, sources):
+    """Copy an earlier session's trained weights into this session.
+
+    The overlay figures are drawn from the checkpoints, not the per-image CSVs,
+    so a figures-only session needs the weights carried forward the same way
+    restore_previous carries the scores. Same empty-/kaggle/working problem,
+    same fix: attach the training session's output and copy its .pt files in
+    before run_report renders anything.
+    """
+    out_dir = Path(cfg["checkpoint_dir"])
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    restored = []
+    for source in sources:
+        source_dir = Path(source) / "checkpoints"
+        for ckpt in sorted(source_dir.glob("*.pt")):
+            target = out_dir / ckpt.name
+            if target.exists():
+                # This session's own weights win, exactly as in restore_previous.
+                continue
+            shutil.copy2(ckpt, target)
+            restored.append(target)
+
+    print(f"restored {len(restored)} checkpoint(s) from earlier sessions")
+    return restored
+
+
 def run_all(cfg, folds, deadline=None, clock=time.monotonic,
             train_fn=train_one, eval_fn=evaluate_run):
     """Train and score every pending run, and report what was left undone.

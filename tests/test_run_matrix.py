@@ -1,10 +1,11 @@
 from itertools import groupby
+from pathlib import Path
 
 import pandas as pd
 import pytest
 
 from src.run_matrix import (ARM_ORDER, per_image_path, plan_runs,
-                            restore_previous, run_all)
+                            restore_checkpoints, restore_previous, run_all)
 from src.splits import lodo_folds
 from src.train import ARMS
 
@@ -127,6 +128,37 @@ def test_restore_does_not_overwrite_this_session_s_results(cfg, tmp_path):
 def test_restore_tolerates_a_missing_directory(cfg, tmp_path):
     # The first session has no previous output to attach, and that is normal.
     assert restore_previous(cfg, [tmp_path / "nothing-here"]) == []
+
+
+def test_restore_checkpoints_brings_forward_the_weights(cfg, tmp_path):
+    # The overlay figures are drawn from the trained weights, not the CSVs. A
+    # figures-only session starts with an empty /kaggle/working, so without this
+    # run_report finds no checkpoints and renders nothing.
+    earlier = tmp_path / "earlier" / "checkpoints"
+    earlier.mkdir(parents=True)
+    (earlier / "unet_jsrt_seed42.pt").write_bytes(b"weights")
+
+    restored = restore_checkpoints(cfg, [tmp_path / "earlier"])
+
+    assert len(restored) == 1
+    assert (Path(cfg["checkpoint_dir"]) / "unet_jsrt_seed42.pt").exists()
+
+
+def test_restore_checkpoints_does_not_overwrite_this_session(cfg, tmp_path):
+    fresh = Path(cfg["checkpoint_dir"]) / "unet_jsrt_seed42.pt"
+    fresh.parent.mkdir(parents=True, exist_ok=True)
+    fresh.write_bytes(b"this session")
+
+    earlier = tmp_path / "earlier" / "checkpoints"
+    earlier.mkdir(parents=True)
+    (earlier / "unet_jsrt_seed42.pt").write_bytes(b"stale")
+
+    restore_checkpoints(cfg, [tmp_path / "earlier"])
+    assert fresh.read_bytes() == b"this session"
+
+
+def test_restore_checkpoints_tolerates_a_missing_directory(cfg, tmp_path):
+    assert restore_checkpoints(cfg, [tmp_path / "nothing-here"]) == []
 
 
 def test_restored_runs_are_not_retrained(cfg, folds, tmp_path):
